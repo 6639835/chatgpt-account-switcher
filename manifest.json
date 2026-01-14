@@ -5,6 +5,9 @@
   "description": "Quickly switch between multiple ChatGPT accounts.",
   "permissions": ["cookies", "storage", "tabs", "scripting"],
   "host_permissions": ["https://chat.openai.com/*", "https://chatgpt.com/*"],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com"
+  },
   "action": {
     "default_popup": "popup.html",
     "default_icon": {

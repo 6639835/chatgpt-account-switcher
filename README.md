@@ -133,7 +133,7 @@ Click **Import** and select a JSON export created by the extension.
 
 ## Configuration
 
-This extension has no runtime settings UI. If you need to target a different ChatGPT domain, update the `DOMAIN` constant in `popup.js`.
+This extension has no runtime settings UI. If you need to adjust supported domains, update the `ALLOWED_DOMAINS` list in `popup.js`.
 
 ## Contributing
 

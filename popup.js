@@ -4,7 +4,7 @@
    Constants
    ========================================================================== */
 
-const DOMAIN = 'chatgpt.com';
+const ALLOWED_DOMAINS = ['chatgpt.com', 'chat.openai.com'];
 
 const ICONS = {
   switch: `
@@ -72,8 +72,23 @@ async function getActiveTab() {
 /**
  * Check if the current tab is on ChatGPT.
  */
+function getTabDomain(tab) {
+  if (!tab?.url) return null;
+  try {
+    return new URL(tab.url).hostname;
+  } catch (error) {
+    console.error('Invalid tab URL:', error);
+    return null;
+  }
+}
+
+function isAllowedDomain(domain) {
+  return ALLOWED_DOMAINS.includes(domain);
+}
+
 function isChatGPTTab(tab) {
-  return tab?.url?.startsWith(`https://${DOMAIN}`);
+  const domain = getTabDomain(tab);
+  return isAllowedDomain(domain);
 }
 
 /**
@@ -81,7 +96,7 @@ function isChatGPTTab(tab) {
  */
 function requireChatGPTTab(tab) {
   if (!isChatGPTTab(tab)) {
-    alert(`Please open ChatGPT (${DOMAIN}) first.`);
+    alert(`Please open ChatGPT (${ALLOWED_DOMAINS.join(', ')}) first.`);
     return false;
   }
   return true;
@@ -92,6 +107,16 @@ function requireChatGPTTab(tab) {
  */
 async function getAccounts() {
   const { accounts = {} } = await chrome.storage.local.get(['accounts']);
+  let needsSave = false;
+  Object.values(accounts).forEach((account) => {
+    if (!account.domain) {
+      account.domain = ALLOWED_DOMAINS[0];
+      needsSave = true;
+    }
+  });
+  if (needsSave) {
+    await saveAccounts(accounts);
+  }
   return accounts;
 }
 
@@ -107,6 +132,10 @@ async function saveAccounts(accounts) {
  */
 function sanitizeFilename(name) {
   return name.replace(/[^a-z0-9]/gi, '_');
+}
+
+function normalizeDomain(domain) {
+  return domain?.replace(/^\./, '');
 }
 
 /* ==========================================================================
@@ -126,9 +155,10 @@ async function saveCurrentAccount() {
 
   const tab = await getActiveTab();
   if (!requireChatGPTTab(tab)) return;
+  const domain = getTabDomain(tab);
 
   // Get cookies for the domain
-  const cookies = await chrome.cookies.getAll({ domain: DOMAIN });
+  const cookies = await chrome.cookies.getAll({ domain });
 
   // Get storage data from the page
   const storages = await executeOnTab(tab.id, () => ({
@@ -138,7 +168,7 @@ async function saveCurrentAccount() {
 
   // Save to extension storage
   const accounts = await getAccounts();
-  accounts[name] = { cookies, storages };
+  accounts[name] = { cookies, storages, domain };
   await saveAccounts(accounts);
 
   // Update UI
@@ -160,13 +190,23 @@ async function switchToAccount(name) {
 
   const tab = await getActiveTab();
   if (!requireChatGPTTab(tab)) return;
+  const tabDomain = getTabDomain(tab);
+  const accountDomain = accountData.domain || tabDomain;
+  if (!isAllowedDomain(accountDomain)) {
+    alert(`Unsupported account domain: ${accountDomain}`);
+    return;
+  }
+  if (tabDomain && tabDomain !== accountDomain) {
+    alert(`Please open ${accountDomain} before switching to this account.`);
+    return;
+  }
 
   // Clear existing cookies
-  const existingCookies = await chrome.cookies.getAll({ domain: DOMAIN });
+  const existingCookies = await chrome.cookies.getAll({ domain: accountDomain });
   await Promise.all(
     existingCookies.map((cookie) =>
       chrome.cookies.remove({
-        url: `https://${DOMAIN}${cookie.path}`,
+        url: `https://${normalizeDomain(cookie.domain || accountDomain)}${cookie.path}`,
         name: cookie.name,
       })
     )
@@ -175,8 +215,9 @@ async function switchToAccount(name) {
   // Set new cookies
   await Promise.all(
     accountData.cookies.map((cookie) => {
+      const cookieDomain = normalizeDomain(cookie.domain || accountDomain);
       const details = {
-        url: `https://${DOMAIN}${cookie.path}`,
+        url: `https://${cookieDomain}${cookie.path}`,
         name: cookie.name,
         value: cookie.value,
         path: cookie.path,
@@ -191,7 +232,7 @@ async function switchToAccount(name) {
         details.path = '/';
         details.secure = true;
       } else {
-        details.domain = cookie.domain;
+        details.domain = cookieDomain;
       }
 
       return chrome.cookies.set(details);
@@ -243,13 +284,16 @@ async function exportAccount(name) {
       version: '1.0',
       exportedAt: new Date().toISOString(),
       accountName: name,
-      domain: DOMAIN,
+      domain: accountData.domain || ALLOWED_DOMAINS[0],
       instructions: {
         withExtension: 'Import this file using the "Import" button in the extension.',
         withoutExtension: `To use without the extension:
 1. COOKIES: Use a cookie editor extension to import the cookies array.
-2. STORAGE: Open ${DOMAIN}, open DevTools (F12), go to Console, and run the restoration script.`,
-        restorationScript: generateRestorationScript(accountData.storages),
+2. STORAGE: Open ${accountData.domain || ALLOWED_DOMAINS[0]}, open DevTools (F12), go to Console, and run the restoration script.`,
+        restorationScript: generateRestorationScript(
+          accountData.storages,
+          accountData.domain || ALLOWED_DOMAINS[0]
+        ),
       },
     },
     cookies: accountData.cookies,
@@ -269,12 +313,12 @@ async function exportAccount(name) {
 /**
  * Generate a script to restore storage data manually.
  */
-function generateRestorationScript(storages) {
+function generateRestorationScript(storages, domain) {
   const localEntries = Object.entries(storages.local || {});
   const sessionEntries = Object.entries(storages.session || {});
 
   const lines = [
-    '// Paste this in DevTools Console while on chatgpt.com',
+    `// Paste this in DevTools Console while on ${domain}`,
     '(function() {',
     '  localStorage.clear();',
     '  sessionStorage.clear();',
@@ -319,6 +363,20 @@ function importAccountFromFile(file) {
         return;
       }
 
+      let importedDomain = data._meta?.domain || data.domain;
+      if (!importedDomain) {
+        importedDomain = prompt('Enter the ChatGPT domain for this account:', ALLOWED_DOMAINS[0]);
+      }
+      if (!importedDomain) {
+        alert('Account domain is required.');
+        return;
+      }
+      importedDomain = importedDomain.trim();
+      if (!isAllowedDomain(importedDomain)) {
+        alert(`Unsupported account domain: ${importedDomain}`);
+        return;
+      }
+
       let name = data._meta?.accountName || '';
       name = prompt('Enter a name for this account:', name);
 
@@ -337,6 +395,7 @@ function importAccountFromFile(file) {
       accounts[name] = {
         cookies: data.cookies,
         storages: data.storages,
+        domain: importedDomain,
       };
 
       await saveAccounts(accounts);
