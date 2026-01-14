@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChatGPT Account Switcher</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header class="header">
+    <h1>Accounts</h1>
+  </header>
+
+  <main class="container">
+    <ul id="account-list" class="account-list"></ul>
+    <p id="empty-state" class="empty-state">No accounts saved yet.</p>
+  </main>
+
+  <footer class="footer">
+    <div class="input-group">
+      <input
+        type="text"
+        id="account-name-input"
+        class="text-input"
+        placeholder="New Account Name"
+        autocomplete="off"
+      >
+    </div>
+
+    <button id="save-btn" class="btn btn-primary">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+        <polyline points="17 21 17 13 7 13 7 21"/>
+        <polyline points="7 3 7 8 15 8"/>
+      </svg>
+      Save Current Account
+    </button>
+
+    <div class="secondary-actions">
+      <button id="import-btn" class="btn btn-secondary">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Import
+      </button>
+      <input type="file" id="import-file-input" accept=".json" hidden>
+    </div>
+
+    <button id="clear-all-btn" class="btn btn-ghost-danger">
+      Clear All Accounts
+    </button>
+  </footer>
+
+  <script src="popup.js"></script>
+</body>
+</html>
