@@ -11,6 +11,7 @@ A lightweight Chrome extension that lets you save, switch, and export multiple C
 
 - [Features](#features)
 - [Quick Start](#quick-start)
+- [Development](#development)
 - [Usage](#usage)
 - [Configuration](#configuration)
 - [Contributing](#contributing)
@@ -39,6 +40,60 @@ A lightweight Chrome extension that lets you save, switch, and export multiple C
 3. Enable **Developer mode** (top-right).
 4. Click **Load unpacked** and select the project folder.
 5. Pin the extension for quick access.
+
+## Development
+
+### Prerequisites
+
+- Node.js 18+ and npm
+
+### Setup
+
+```bash
+# Install dependencies
+npm install
+
+# Run linter
+npm run lint
+
+# Fix linting issues
+npm run lint:fix
+
+# Format code
+npm run format
+
+# Check formatting
+npm run format:check
+```
+
+### Build for Distribution
+
+```bash
+# Build to dist/ folder
+npm run build
+
+# Build and create zip for Chrome Web Store
+npm run package
+```
+
+### Project Structure
+
+```
+chatgpt-account-switcher/
+├── icons/              # Extension icons (16, 48, 128px)
+├── scripts/            # Build scripts
+├── manifest.json       # Chrome extension manifest (MV3)
+├── popup.html          # Extension popup UI
+├── popup.js            # Popup logic and account management
+├── popup.css           # Popup styles
+├── package.json        # Node.js dependencies and scripts
+├── eslint.config.js    # ESLint configuration
+├── .prettierrc         # Prettier configuration
+├── .editorconfig       # Editor configuration
+├── CHANGELOG.md        # Version history
+├── LICENSE             # MIT License
+└── README.md           # This file
+```
 
 ## Usage
 

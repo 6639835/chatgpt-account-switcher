@@ -1,0 +1,32 @@
+{
+  "name": "chatgpt-account-switcher",
+  "version": "0.1.0",
+  "description": "A Chrome extension to quickly switch between multiple ChatGPT accounts",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "build": "node scripts/build.js",
+    "package": "npm run build && cd dist && zip -r ../chatgpt-account-switcher.zip ."
+  },
+  "devDependencies": {
+    "eslint": "^9.18.0",
+    "eslint-config-prettier": "^10.0.1",
+    "globals": "^15.14.0",
+    "prettier": "^3.4.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "chrome-extension",
+    "chatgpt",
+    "account-switcher",
+    "browser-extension"
+  ],
+  "author": "",
+  "license": "MIT"
+}
